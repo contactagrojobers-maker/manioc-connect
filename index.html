@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manioc Connect — Achetez et vendez du manioc partout au Cameroun</title>
+<meta name="description" content="Manioc Connect connecte producteurs, acheteurs et industriels du manioc au Cameroun. Vendez votre récolte, trouvez des acheteurs, groupez-vous par zone. 100% camerounais.">
+<meta name="keywords" content="manioc Cameroun, vendre manioc, acheter manioc, gari Cameroun, agriculture Cameroun, marketplace agricole, producteurs manioc">
+<meta name="author" content="Manioc Connect">
+<link rel="canonical" href="https://maniocconnect.cm/">
+
+<!-- Open Graph / réseaux sociaux -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Manioc Connect — La marketplace du manioc au Cameroun">
+<meta property="og:description" content="Connectez producteurs, acheteurs et industriels du manioc partout au Cameroun. Vendez, achetez, groupez-vous par zone.">
+<meta property="og:locale" content="fr_CM">
+
+<!-- Données structurées (Organization) pour Google -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Manioc Connect",
+  "description": "Plateforme camerounaise connectant producteurs, acheteurs et industriels du manioc.",
+  "email": "contact.agrojobers@gmail.com",
+  "telephone": "+237675998580",
+  "address": { "@type": "PostalAddress", "addressLocality": "Bertoua", "addressCountry": "CM" }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ===== INSCRIPTION ===== -->
+  <div class="screen" id="screen-bienvenue">
+    <div class="topbar">
+      <div class="brand"><span class="dot">🌾</span> Manioc Connect</div>
+      <div style="width:34px;"></div>
+    </div>
+    <div style="text-align:center; margin:18px 0 26px;">
+      <div style="font-size:44px;">🌾</div>
+      <div class="greeting" style="margin-top:8px;">C'est facile de vendre<br>votre manioc</div>
+      <p class="greeting-sub">Créez votre compte en 30 secondes</p>
+      <div class="cm-badge" style="margin-top:10px;"><span class="flag">🇨🇲</span> Fait au Cameroun, pour le Cameroun</div>
+    </div>
+
+    <div id="reg-step-form">
+      <label class="field-label">Votre nom</label>
+      <input class="input-big" id="reg-name" placeholder="Ex : Étienne Mbarga">
+
+      <label class="field-label">Numéro WhatsApp</label>
+      <input class="input-big" id="reg-phone" placeholder="Ex : 6 XX XX XX XX">
+      <p id="reg-phone-status" style="font-size:11.5px; margin:6px 2px 0;"></p>
+
+      <label class="field-label">Vous êtes...</label>
+      <div class="choice-row" id="reg-role">
+        <div class="chip selected" data-value="producteur">🌾 Producteur</div>
+        <div class="chip" data-value="acheteur">🛒 Acheteur</div>
+        <div class="chip" data-value="industriel">🏭 Industriel</div>
+      </div>
+
+      <label class="field-label">Votre village / zone</label>
+      <input class="input-big" id="reg-zone" placeholder="Ex : Ntui, Centre">
+
+      <div class="consent-row" style="display:flex;align-items:flex-start;gap:8px;margin-top:18px;background:var(--cream-2);padding:11px 12px;border-radius:12px;">
+        <input type="checkbox" checked id="reg-consent" style="margin-top:2px;width:16px;height:16px;flex-shrink:0;">
+        <label for="reg-consent" style="font-size:12px;color:var(--ink-soft);line-height:1.4;">Me tenir informé des formations, boutures et offres utiles près de chez moi</label>
+      </div>
+
+      <button class="submit-btn" onclick="handleRegisterStart()">Continuer</button>
+      <p style="text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:10px;">En continuant, vous acceptez nos conditions d'utilisation</p>
+      <button class="skip-link" onclick="showScreen('login')">Déjà un compte ? Se connecter</button>
+    </div>
+
+    <div id="reg-step-otp" style="display:none;">
+      <p style="font-size:13.5px;color:var(--ink-soft);text-align:center;margin:10px 0 4px;">Entrez le code à 4 chiffres envoyé par SMS/WhatsApp au numéro indiqué</p>
+      <input class="input-big" id="otp-input" maxlength="4" style="text-align:center;font-size:22px;letter-spacing:8px;font-weight:700;" placeholder="0000">
+      <p id="otp-demo-hint" style="text-align:center;font-size:11.5px;color:var(--gold-dark);font-weight:700;margin-top:8px;"></p>
+      <button class="submit-btn" onclick="handleVerifyOtp()">Vérifier mon numéro</button>
+      <button class="skip-link" onclick="document.getElementById('reg-step-otp').style.display='none';document.getElementById('reg-step-form').style.display='block';">← Modifier mes informations</button>
+    </div>
+  </div>
+
+  <!-- ===== CONNEXION ===== -->
+  <div class="screen" id="screen-login">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('bienvenue')">←</div><div class="brand" style="font-size:15px;">Se connecter</div><div style="width:34px;"></div></div>
+    <div style="text-align:center; margin:18px 0 26px;">
+      <div style="font-size:40px;">👋</div>
+      <div class="greeting" style="margin-top:8px;">Content de vous revoir</div>
+      <p class="greeting-sub">Entrez votre numéro pour retrouver votre compte</p>
+    </div>
+    <label class="field-label">Numéro WhatsApp</label>
+    <input class="input-big" id="login-phone" placeholder="Ex : 6 XX XX XX XX">
+    <p id="login-error" style="font-size:12px;color:var(--terracotta);margin:6px 2px 0;"></p>
+    <button class="submit-btn" onclick="handleLogin()">Se connecter</button>
+    <button class="skip-link" onclick="showScreen('bienvenue')">Pas encore de compte ? S'inscrire</button>
+  </div>
+
+  <!-- ===== ABONNEMENT ===== -->
+  <div class="screen" id="screen-abonnement">
+    <div class="topbar"><div style="width:34px;"></div><div class="brand" style="font-size:15px;">Votre compte</div><div style="width:34px;"></div></div>
+    <div style="text-align:center; margin:8px 0 20px;">
+      <div style="font-size:40px;">🌟</div>
+      <div class="greeting" style="margin-top:6px;">Débloquez tout<br>Manioc Connect</div>
+      <div class="launch-offer"><span class="old-price">10 000 FCFA/an</span><span class="new-price">4 000 FCFA/an</span></div>
+      <p class="greeting-sub" style="margin-top:8px;">Offre de lancement valable jusqu'au 20 octobre 2026</p>
+    </div>
+    <div class="perk-list">
+      <div class="perk-item"><span class="perk-icon">📣</span><div><b>Vos annonces vues en premier</b><div class="perk-sub">Priorité dans les recherches et sur la page d'accueil</div></div></div>
+      <div class="perk-item"><span class="perk-icon">🤝</span><div><b>Accès aux groupements de zone</b><div class="perk-sub">Rejoignez ou créez un groupement de vente</div></div></div>
+      <div class="perk-item"><span class="perk-icon">🔔</span><div><b>Alertes illimitées</b><div class="perk-sub">Besoins acheteurs, prix du marché, alertes maladies</div></div></div>
+      <div class="perk-item"><span class="perk-icon">🎓</span><div><b>Accès prioritaire aux formations</b><div class="perk-sub">Et aux disponibilités de boutures</div></div></div>
+      <div class="perk-item"><span class="perk-icon">✅</span><div><b>Badge "Membre vérifié"</b><div class="perk-sub">Plus de confiance auprès des acheteurs</div></div></div>
+    </div>
+    <p style="font-size:12px;color:var(--ink-soft); margin:14px 2px 0; line-height:1.5;">Cette contribution sert à faire fonctionner la plateforme, financer le support, et développer de nouvelles fonctionnalités utiles à la filière manioc. Le tarif de lancement à 4 000 FCFA reste valable pour tous ceux qui s'abonnent avant le 20 octobre 2026, même pour le renouvellement.</p>
+    <button class="submit-btn" style="background:var(--terracotta); margin-top:20px;" onclick="showScreen('paiement')">Payer 4 000 FCFA maintenant</button>
+    <button class="skip-link" onclick="afterAuthContinue()">Continuer avec la version gratuite</button>
+  </div>
+
+  <!-- ===== PAIEMENT ===== -->
+  <div class="screen" id="screen-paiement">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('abonnement')">←</div><div class="brand" style="font-size:15px;">Paiement</div><div style="width:34px;"></div></div>
+    <div class="pay-summary"><div>Abonnement Manioc Connect · 1 an<br><span style="opacity:0.7;font-size:11px;">Tarif de lancement</span></div><div class="pay-amount">4 000 FCFA</div></div>
+    <label class="field-label">Choisissez votre moyen de paiement</label>
+    <div class="pay-options" id="pay-options">
+      <div class="pay-option selected" data-value="orange_money" data-number="695664633"><span class="pay-dot" style="background:#FF6600;"></span> Orange Money</div>
+      <div class="pay-option" data-value="mtn_momo" data-number="675998580"><span class="pay-dot" style="background:#FFCB05;"></span> MTN Mobile Money</div>
+    </div>
+    <div class="pay-recipient" id="pay-recipient">
+      <div class="perk-sub" style="margin-bottom:2px;">Envoyer à</div>
+      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:15px;">Kene Dagha Brondon</div>
+      <div style="font-weight:700;color:var(--leaf-dark);" id="pay-recipient-number">695 664 633</div>
+    </div>
+    <label class="field-label">Votre numéro de téléphone</label>
+    <input class="input-big" id="pay-phone" placeholder="Ex : 6 XX XX XX XX">
+
+    <label class="field-label">Référence de la transaction</label>
+    <input class="input-big" id="pay-reference" placeholder="Reçue par SMS après votre paiement">
+    <p style="font-size:11.5px;color:var(--ink-soft);margin:6px 2px 0;">Effectuez d'abord le transfert vers le numéro ci-dessus, puis indiquez ici la référence reçue par SMS pour validation.</p>
+
+    <button class="submit-btn" style="background:var(--leaf); margin-top:22px;" onclick="handlePayment()">J'ai effectué le paiement</button>
+    <p style="text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:10px;">Votre paiement sera vérifié et votre compte activé sous peu (généralement quelques heures)</p>
+  </div>
+
+  <!-- ===== ACCUEIL ===== -->
+  <div class="screen" id="screen-accueil">
+    <div class="topbar">
+      <div class="brand"><span class="dot">🌾</span> Manioc Connect</div>
+      <div style="display:flex; gap:8px;">
+        <div class="icon-btn" style="position:relative;" onclick="toggleNotifications()">🔔<span class="notif-badge" id="notif-badge" style="display:none;"></span></div>
+        <div class="icon-btn" id="profile-nav-icon" style="position:relative;overflow:visible;" onclick="handleNavProtected('profil')">👤<span class="conn-dot" id="conn-dot"></span></div>
+      </div>
+    </div>
+
+    <div class="hero-banner">
+      <svg viewBox="0 0 400 130" style="width:100%;height:auto;display:block;">
+        <defs>
+          <linearGradient id="heroBg" x1="0" y1="0" x2="400" y2="130" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#1E3A22"/><stop offset="1" stop-color="#2D5233"/>
+          </linearGradient>
+          <linearGradient id="tuberGradHero" x1="0" y1="0" x2="90" y2="100" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#F3D888"/><stop offset="1" stop-color="#C1440E"/>
+          </linearGradient>
+        </defs>
+        <rect width="400" height="130" rx="18" fill="url(#heroBg)"/>
+        <circle cx="355" cy="20" r="60" fill="#ffffff" opacity="0.04"/>
+        <g transform="translate(300,95) scale(0.62)">
+          <path d="M20 -10 C -20 15, -45 70, -20 130 C -5 175, 55 195, 105 170 C 160 145, 185 80, 155 20 C 130 -25, 60 -30, 20 -10 Z" fill="url(#tuberGradHero)"/>
+          <g transform="translate(90,-70) rotate(8)">
+            <path d="M0 0 C -10 -38 -6 -64 0 -82 C 6 -64 10 -38 0 0 Z" fill="#2D5233"/>
+            <path d="M0 0 C -30 -24 -50 -40 -62 -64 C -38 -54 -14 -38 0 0 Z" fill="#2D5233"/>
+            <path d="M0 0 C 30 -24 50 -40 62 -64 C 38 -54 14 -38 0 0 Z" fill="#2D5233"/>
+          </g>
+        </g>
+        <text x="24" y="48" font-family="Poppins, sans-serif" font-weight="800" font-size="22" fill="#FAF6EC">Manioc Connect</text>
+        <text x="24" y="72" font-family="Inter, sans-serif" font-size="12.5" fill="#F3D888">🇨🇲 Fait au Cameroun, pour le Cameroun</text>
+        <text x="24" y="98" font-family="Inter, sans-serif" font-size="11.5" fill="#FAF6ECcc">Vendez, achetez, groupez-vous — en un clic</text>
+      </svg>
+    </div>
+
+    <div class="greeting" id="home-greeting">Bonjour 👋</div>
+    <p class="greeting-sub">Que voulez-vous faire aujourd'hui ?</p>
+
+    <div class="premium-banner" id="premium-banner">
+      <div class="txt">Compte gratuit — <b>4 000 FCFA/an</b><br>jusqu'au 20 oct. 2026 seulement</div>
+      <button onclick="handleNavProtected('abonnement')">Voir</button>
+    </div>
+
+    <div class="grid-actions">
+      <button class="action-card sell" onclick="handleNavProtected('vendre')"><span class="emoji">🌾</span><span class="label">Je vends<br>mon manioc</span></button>
+      <button class="action-card buy" onclick="showScreen('acheter')"><span class="emoji">🛒</span><span class="label">Je cherche<br>du manioc</span></button>
+      <button class="action-card industry" onclick="showScreen('industriels')"><span class="emoji">🏭</span><span class="label">Espace<br>industriels</span></button>
+      <button class="action-card ask" onclick="showScreen('questions')"><span class="emoji">❓</span><span class="label">Poser une<br>question</span></button>
+    </div>
+
+    <div class="section-label">📢 Besoins des acheteurs près de chez vous</div>
+    <div id="home-needs-list"></div>
+
+    <div class="section-label">Disponibilité par zone</div>
+    <div id="home-zones-list"></div>
+  </div>
+
+  <!-- ===== VENDRE ===== -->
+  <div class="screen" id="screen-vendre">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Je vends mon manioc</div><div style="width:34px;"></div></div>
+
+    <label class="field-label">Quel produit ?</label>
+    <div class="choice-row" id="sell-product">
+      <div class="chip selected" data-value="racine_fraiche">Racine fraîche</div>
+      <div class="chip" data-value="gari">Gari</div>
+      <div class="chip" data-value="baton">Bâton de manioc</div>
+      <div class="chip" data-value="farine">Farine</div>
+    </div>
+
+    <label class="field-label">Quantité disponible (kg)</label>
+    <input class="input-big" id="sell-qty" placeholder="Ex : 500">
+
+    <label class="field-label">Prix souhaité (FCFA / kg)</label>
+    <input class="input-big" id="sell-price" placeholder="Ex : 150">
+
+    <label class="field-label">Votre zone</label>
+    <input class="input-big" id="sell-zone" placeholder="Ex : Ntui, Centre">
+
+    <button class="submit-btn" onclick="handleCreateListing()">Publier mon annonce</button>
+  </div>
+
+  <!-- ===== ACHETER ===== -->
+  <div class="screen" id="screen-acheter">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Acheter du manioc</div><div style="width:34px;"></div></div>
+
+    <div class="tab-switch">
+      <button class="tab-btn active" id="tab-dispo" onclick="switchBuyTab('dispo')">📦 Disponible</button>
+      <button class="tab-btn" id="tab-besoin" onclick="switchBuyTab('besoin')">📢 Publier un besoin</button>
+    </div>
+
+    <div id="buyview-dispo">
+      <div id="buy-listings"></div>
+    </div>
+
+    <div id="buyview-besoin" style="display:none;">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:2px 0 4px;">Votre besoin sera visible par tous les producteurs de votre zone, et affiché sur la page d'accueil.</p>
+
+      <label class="field-label">Que recherchez-vous ?</label>
+      <div class="choice-row" id="need-product">
+        <div class="chip selected" data-value="racine_fraiche">Racine fraîche</div>
+        <div class="chip" data-value="gari">Gari</div>
+        <div class="chip" data-value="baton">Bâton de manioc</div>
+        <div class="chip" data-value="farine">Farine</div>
+      </div>
+
+      <label class="field-label">Quantité recherchée (kg)</label>
+      <input class="input-big" id="need-qty" placeholder="Ex : 300">
+
+      <label class="field-label">Budget (optionnel)</label>
+      <input class="input-big" id="need-budget" placeholder="Ex : 140 FCFA / kg">
+
+      <label class="field-label">Zone de livraison souhaitée</label>
+      <input class="input-big" id="need-zone" placeholder="Ex : Ntui, Centre">
+
+      <label class="field-label">Spécifications qualité (optionnel)</label>
+      <div class="choice-row" id="need-quality">
+        <div class="chip selected" data-value="standard">Standard</div>
+        <div class="chip" data-value="calibre_gros">Calibre gros</div>
+        <div class="chip" data-value="sans_defauts">Sans défauts</div>
+        <div class="chip" data-value="certifie">Certifié</div>
+      </div>
+      <textarea class="input-big" id="need-quality-notes" style="margin-top:10px; min-height:56px;" placeholder="Autres exigences (humidité, variété, emballage...)"></textarea>
+
+      <label class="field-label">Conditions de paiement</label>
+      <div class="choice-row" id="need-payment">
+        <div class="chip selected" data-value="livraison">À la livraison</div>
+        <div class="chip" data-value="acompte_solde">Acompte + solde</div>
+        <div class="chip" data-value="mobile_money">Mobile Money</div>
+        <div class="chip" data-value="virement">Virement</div>
+      </div>
+
+      <label class="field-label">C'est urgent ?</label>
+      <div class="choice-row" id="need-urgency">
+        <div class="chip" data-value="true">🔥 Urgent</div>
+        <div class="chip selected" data-value="false">Pas pressé</div>
+      </div>
+
+      <button class="submit-btn" style="background:var(--terracotta);" onclick="handleCreateNeed()">Publier mon besoin</button>
+    </div>
+  </div>
+
+  <!-- ===== INDUSTRIELS ===== -->
+  <div class="screen" id="screen-industriels">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Espace industriels</div><div style="width:34px;"></div></div>
+    <p style="font-size:13px;color:var(--ink-soft);margin:0 0 16px;">Publiez vos produits transformés ou vos besoins en gros volume.</p>
+
+    <div id="industrial-listings"></div>
+
+    <div class="section-label">Publier une annonce industrielle</div>
+    <label class="field-label">Nom de l'entreprise</label>
+    <input class="input-big" id="ind-company" placeholder="Ex : SOCAMANIOC Sarl">
+
+    <label class="field-label">Type d'annonce</label>
+    <div class="choice-row" id="ind-type">
+      <div class="chip selected" data-value="achete">J'achète</div>
+      <div class="chip" data-value="vend">Je vends</div>
+    </div>
+
+    <label class="field-label">Description</label>
+    <textarea class="input-big" id="ind-description" style="min-height:56px;" placeholder="Ex : Racine fraîche, gros volumes"></textarea>
+
+    <label class="field-label">Volume</label>
+    <input class="input-big" id="ind-volume" placeholder="Ex : 5 T / semaine">
+
+    <label class="field-label">Zone</label>
+    <input class="input-big" id="ind-zone" placeholder="Ex : Centre & Littoral">
+
+    <button class="submit-btn" onclick="handleCreateIndustrial()">Publier l'annonce</button>
+  </div>
+
+  <!-- ===== QUESTIONS ===== -->
+  <div class="screen" id="screen-questions">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Questions filière</div><div style="width:34px;"></div></div>
+
+    <div id="questions-list"></div>
+
+    <div class="section-label">Poser une question</div>
+    <label class="field-label">Votre question</label>
+    <input class="input-big" id="q-title" placeholder="Ex : Mes feuilles jaunissent, que faire ?">
+
+    <label class="field-label">Détails (optionnel)</label>
+    <textarea class="input-big" id="q-body" style="min-height:56px;" placeholder="Ajoutez des précisions si besoin"></textarea>
+
+    <label class="field-label">Votre zone</label>
+    <input class="input-big" id="q-zone" placeholder="Ex : Sa'a, Centre">
+
+    <label class="field-label">Catégorie</label>
+    <div class="choice-row" id="q-tag">
+      <div class="chip selected" data-value="maladie">🌱 Maladie</div>
+      <div class="chip" data-value="variete">🌾 Variété</div>
+      <div class="chip" data-value="marche">💰 Marché</div>
+      <div class="chip" data-value="autre">Autre</div>
+    </div>
+
+    <button class="submit-btn" style="background:var(--gold-dark);" onclick="handleCreateQuestion()">Publier ma question</button>
+  </div>
+
+  <!-- ===== PROFIL ===== -->
+  <div class="screen" id="screen-profil">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Mon profil</div><div style="width:34px;"></div></div>
+    <div style="text-align:center; margin:10px 0 20px;">
+      <div class="avatar-upload-wrap">
+        <div class="logo-circle" id="profil-avatar" style="width:64px;height:64px;font-size:22px;">--</div>
+        <label class="avatar-camera-btn" for="avatar-file-input">📷</label>
+        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
+      </div>
+      <div class="greeting" id="profil-name" style="font-size:17px; margin-top:8px;">—</div>
+      <div class="cm-badge" id="profil-badge" style="margin-top:6px;">—</div>
+    </div>
+
+    <!-- MODE LECTURE -->
+    <div id="profil-view">
+      <div class="section-label">Mes informations</div>
+      <div class="info-row"><span>Nom</span><b id="pv-name">—</b></div>
+      <div class="info-row"><span>Téléphone</span><b id="pv-phone">—</b></div>
+      <div class="info-row"><span>Rôle</span><b id="pv-role">—</b></div>
+      <div class="info-row"><span>Zone</span><b id="pv-zone">—</b></div>
+
+      <!-- Spécifique PRODUCTEUR -->
+      <div id="pv-block-producteur" style="display:none;">
+        <div class="info-row"><span>Variétés cultivées</span><b id="pv-varieties">—</b></div>
+        <div class="info-row"><span>Superficie</span><b id="pv-farmsize">—</b></div>
+        <div class="info-row"><span>Centres d'intérêt</span><b id="pv-interests">—</b></div>
+      </div>
+
+      <!-- Spécifique ACHETEUR -->
+      <div id="pv-block-acheteur" style="display:none;">
+        <div class="info-row"><span>Type d'acheteur</span><b id="pv-buyertype">—</b></div>
+        <div class="info-row"><span>Produits recherchés</span><b id="pv-products-wanted">—</b></div>
+        <div class="info-row"><span>Volume d'achat habituel</span><b id="pv-purchase-volume">—</b></div>
+      </div>
+
+      <!-- Spécifique INDUSTRIEL -->
+      <div id="pv-block-industriel" style="display:none;">
+        <div class="info-row"><span>Entreprise</span><b id="pv-company">—</b></div>
+        <div class="info-row"><span>Zone d'approvisionnement</span><b id="pv-sourcing-zone">—</b></div>
+        <div class="info-row"><span>Besoins / volumes</span><b id="pv-sourcing-notes">—</b></div>
+      </div>
+
+      <div class="info-row"><span>Abonnement</span><b id="pv-premium">—</b></div>
+
+      <button class="submit-btn" style="background:var(--leaf);" onclick="enterEditMode()">✏️ Modifier mes informations</button>
+      <button class="skip-link" style="color:var(--terracotta);text-decoration:none;font-weight:700;" onclick="handleLogout()">🚪 Se déconnecter</button>
+      <button class="skip-link" onclick="showScreen('apropos')" style="text-decoration:none;">ℹ️ À propos & Contact</button>
+    </div>
+
+    <!-- MODE ÉDITION -->
+    <div id="profil-edit" style="display:none;">
+      <label class="field-label">Nom</label>
+      <input class="input-big" id="edit-name">
+
+      <label class="field-label">Téléphone (WhatsApp)</label>
+      <input class="input-big" id="edit-phone">
+      <p id="edit-phone-status" style="font-size:11.5px; margin:6px 2px 0;"></p>
+
+      <label class="field-label">Zone</label>
+      <input class="input-big" id="edit-zone">
+
+      <!-- Spécifique PRODUCTEUR -->
+      <div id="edit-block-producteur" style="display:none;">
+        <label class="field-label">Variétés cultivées</label>
+        <div class="choice-row" id="edit-varieties" data-multi="true">
+          <div class="chip" data-value="Excellence">Excellence</div>
+          <div class="chip" data-value="TMS 4(2)1425">TMS 4(2)1425</div>
+          <div class="chip" data-value="Je ne sais pas">Je ne sais pas</div>
+        </div>
+
+        <label class="field-label">Superficie cultivée</label>
+        <div class="choice-row" id="edit-farmsize">
+          <div class="chip" data-value="<1ha">Moins de 1 ha</div>
+          <div class="chip" data-value="1-3ha">1 à 3 ha</div>
+          <div class="chip" data-value=">3ha">Plus de 3 ha</div>
+        </div>
+
+        <label class="field-label">Ça vous intéresse ?</label>
+        <div class="choice-row" id="edit-interests" data-multi="true">
+          <div class="chip" data-value="formation">📚 Formations</div>
+          <div class="chip" data-value="boutures">🌱 Boutures</div>
+          <div class="chip" data-value="financement">💰 Financement</div>
+        </div>
+      </div>
+
+      <!-- Spécifique ACHETEUR -->
+      <div id="edit-block-acheteur" style="display:none;">
+        <label class="field-label">Type d'acheteur</label>
+        <div class="choice-row" id="edit-buyertype">
+          <div class="chip" data-value="particulier">Particulier</div>
+          <div class="chip" data-value="commercant">Commerçant</div>
+          <div class="chip" data-value="transformateur">Transformateur</div>
+        </div>
+
+        <label class="field-label">Produits recherchés</label>
+        <div class="choice-row" id="edit-products-wanted" data-multi="true">
+          <div class="chip" data-value="racine_fraiche">Racine fraîche</div>
+          <div class="chip" data-value="gari">Gari</div>
+          <div class="chip" data-value="baton">Bâton de manioc</div>
+          <div class="chip" data-value="farine">Farine</div>
+        </div>
+
+        <label class="field-label">Volume d'achat habituel</label>
+        <div class="choice-row" id="edit-purchase-volume">
+          <div class="chip" data-value="<100kg">Moins de 100 kg/semaine</div>
+          <div class="chip" data-value="100-500kg">100 à 500 kg/semaine</div>
+          <div class="chip" data-value=">500kg">Plus de 500 kg/semaine</div>
+        </div>
+      </div>
+
+      <!-- Spécifique INDUSTRIEL -->
+      <div id="edit-block-industriel" style="display:none;">
+        <label class="field-label">Nom de l'entreprise</label>
+        <input class="input-big" id="edit-company" placeholder="Ex : SOCAMANIOC Sarl">
+
+        <label class="field-label">Zone d'approvisionnement</label>
+        <input class="input-big" id="edit-sourcing-zone" placeholder="Ex : Centre & Littoral">
+
+        <label class="field-label">Besoins / volumes recherchés</label>
+        <textarea class="input-big" id="edit-sourcing-notes" style="min-height:56px;" placeholder="Ex : 5T/semaine de racine fraîche"></textarea>
+      </div>
+
+      <button class="submit-btn" style="background:var(--leaf);" onclick="saveProfileEdits()">Enregistrer les modifications</button>
+      <button class="skip-link" onclick="exitEditMode()">Annuler</button>
+    </div>
+  </div>
+
+  <!-- ===== À PROPOS ===== -->
+  <div class="screen" id="screen-apropos">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">À propos & Contact</div><div style="width:34px;"></div></div>
+    <div style="text-align:center; margin:10px 0 22px;">
+      <div class="logo-circle">🌾</div>
+      <div class="greeting" style="margin-top:10px;">Manioc Connect</div>
+      <div class="cm-badge" style="margin-top:8px;"><span class="flag">🇨🇲</span> Fait au Cameroun, pour le Cameroun</div>
+    </div>
+    <p style="font-size:13.5px; color:var(--ink-soft); line-height:1.6; text-align:center; padding:0 6px;">Manioc Connect est une plateforme qui connecte producteurs, acheteurs et industriels du manioc partout au Cameroun. Notre mission : rendre la vente et l'achat de manioc plus simples, plus rapides, et plus justes pour tous.</p>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num">1 200+</div><div class="stat-label">Membres</div></div>
+      <div class="stat-box"><div class="stat-num">6</div><div class="stat-label">Régions</div></div>
+      <div class="stat-box"><div class="stat-num">3T+</div><div class="stat-label">Échangées</div></div>
+    </div>
+    <div class="section-label" style="margin-top:26px;">Nous contacter</div>
+    <a href="https://wa.me/237675998580" target="_blank" style="text-decoration:none;color:inherit;">
+      <div class="contact-item"><span class="contact-icon" style="background:#25D366;">💬</span><div><b>WhatsApp</b><div class="perk-sub">+237 675 998 580 · Réponse rapide</div></div></div>
+    </a>
+    <a href="tel:+237695664633" style="text-decoration:none;color:inherit;">
+      <div class="contact-item"><span class="contact-icon" style="background:var(--leaf);">📞</span><div><b>Appel</b><div class="perk-sub">+237 695 664 633</div></div></div>
+    </a>
+    <a href="mailto:contact.agrojobers@gmail.com" style="text-decoration:none;color:inherit;">
+      <div class="contact-item"><span class="contact-icon" style="background:var(--gold-dark);">✉️</span><div><b>Email</b><div class="perk-sub">contact.agrojobers@gmail.com</div></div></div>
+    </a>
+    <div class="contact-item"><span class="contact-icon" style="background:var(--terracotta);">📍</span><div><b>Siège social</b><div class="perk-sub">Bertoua, Cameroun</div></div></div>
+
+    <a href="https://wa.me/237675998580" target="_blank" style="text-decoration:none;">
+      <button class="submit-btn" style="background:#25D366; margin-top:20px;">💬 Discuter sur WhatsApp</button>
+    </a>
+
+    <div class="section-label" style="margin-top:28px;">💬 Ils nous font confiance</div>
+    <div class="testimonial-card">
+      <div class="testimonial-quote">"Depuis que je poste mes annonces ici, je vends mon manioc bien plus vite. Le groupement avec d'autres producteurs de ma zone a tout changé."</div>
+      <div class="testimonial-author">— Jean-Baptiste, producteur à Ntui</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-quote">"Simple à utiliser, même pour moi qui ne suis pas très à l'aise avec les applications. Je trouve du gari rapidement pour mon commerce."</div>
+      <div class="testimonial-author">— Rita T., commerçante à Sa'a</div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-quote">"Enfin une plateforme pensée pour notre filière. La publication de besoins nous fait gagner un temps précieux pour nos approvisionnements."</div>
+      <div class="testimonial-author">— SOCAMANIOC Sarl, industriel</div>
+    </div>
+
+    <div class="section-label" style="margin-top:26px;">💡 Une suggestion pour nous ?</div>
+    <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;">Une idée, un problème rencontré, une fonctionnalité qui vous manque ? Dites-le-nous.</p>
+    <input class="input-big" id="suggestion-name" placeholder="Votre nom (optionnel)">
+    <textarea class="input-big" id="suggestion-message" style="margin-top:10px; min-height:80px;" placeholder="Votre suggestion..."></textarea>
+    <button class="submit-btn" style="background:var(--leaf); margin-top:14px;" onclick="handleSubmitSuggestion()">Envoyer ma suggestion</button>
+
+    <button class="skip-link" onclick="showScreen('admin-login')" style="opacity:0.5; text-decoration:none; font-size:11px; margin-top:24px;">Accès administrateur</button>
+  </div>
+
+  <!-- ===== CONNEXION ADMIN ===== -->
+  <div class="screen" id="screen-admin-login">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Espace administrateur</div><div style="width:34px;"></div></div>
+    <div style="text-align:center; margin:20px 0;">
+      <div style="font-size:36px;">🔐</div>
+      <div class="greeting" style="margin-top:8px;">Accès réservé</div>
+      <p class="greeting-sub">Entrez le mot de passe administrateur</p>
+    </div>
+    <label class="field-label">Mot de passe</label>
+    <input class="input-big" id="admin-password" type="password" placeholder="••••••••">
+    <p id="admin-login-error" style="font-size:12px;color:var(--terracotta);margin:6px 2px 0;"></p>
+    <button class="submit-btn" style="background:var(--ink);" onclick="handleAdminLogin()">Se connecter</button>
+  </div>
+
+  <!-- ===== TABLEAU DE BORD ADMIN ===== -->
+  <div class="screen" id="screen-admin">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Espace administrateur</div><div style="width:34px;"></div></div>
+
+    <div class="admin-layout">
+      <div class="admin-sidebar">
+        <button class="admin-side-btn active" data-atab="overview" onclick="switchAdminTab('overview')"><span class="admin-side-icon">📊</span> Vue d'ensemble</button>
+        <button class="admin-side-btn" data-atab="users" onclick="switchAdminTab('users')"><span class="admin-side-icon">👥</span> Utilisateurs</button>
+        <button class="admin-side-btn" data-atab="content" onclick="switchAdminTab('content')"><span class="admin-side-icon">📋</span> Contenu</button>
+        <button class="admin-side-btn" data-atab="payments" onclick="switchAdminTab('payments')"><span class="admin-side-icon">💰</span> Paiements</button>
+        <button class="admin-side-btn" data-atab="broadcast" onclick="switchAdminTab('broadcast')"><span class="admin-side-icon">📢</span> Diffusion</button>
+        <button class="admin-side-btn" data-atab="suggestions" onclick="switchAdminTab('suggestions')"><span class="admin-side-icon">💡</span> Suggestions</button>
+      </div>
+
+      <div class="admin-content-area">
+        <!-- VUE D'ENSEMBLE -->
+        <div id="admin-view-overview">
+          <div class="admin-stats-row">
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-total">0</div><div class="admin-stat-label">Inscrits</div></div>
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-premium">0</div><div class="admin-stat-label">Premium</div></div>
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-pending">0</div><div class="admin-stat-label">Paiements en attente</div></div>
+          </div>
+          <div class="admin-stats-row">
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-listings">0</div><div class="admin-stat-label">Annonces</div></div>
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-needs">0</div><div class="admin-stat-label">Besoins</div></div>
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-questions">0</div><div class="admin-stat-label">Questions</div></div>
+          </div>
+          <div class="section-label">💰 Paiements à valider en priorité</div>
+          <div id="admin-pending-payments"></div>
+
+          <div class="section-label">🔔 Journal d'activité (réservé admin)</div>
+          <div id="admin-activity-log"></div>
+        </div>
+
+        <!-- UTILISATEURS -->
+        <div id="admin-view-users" style="display:none;">
+          <label class="field-label">Rechercher</label>
+          <input class="input-big" id="admin-user-search" placeholder="Nom, téléphone, zone..." oninput="renderAdminUsers()">
+          <div class="section-label" style="margin-top:16px;">Tous les utilisateurs</div>
+          <div id="admin-all-users"></div>
+        </div>
+
+        <!-- CONTENU (modération) -->
+        <div id="admin-view-content" style="display:none;">
+          <div class="tab-switch">
+            <button class="tab-btn active" id="ctab-listings" onclick="switchContentTab('listings')">Annonces</button>
+            <button class="tab-btn" id="ctab-needs" onclick="switchContentTab('needs')">Besoins</button>
+            <button class="tab-btn" id="ctab-industrial" onclick="switchContentTab('industrial')">Industriels</button>
+            <button class="tab-btn" id="ctab-questions" onclick="switchContentTab('questions')">Questions</button>
+          </div>
+          <div id="admin-content-listings"></div>
+          <div id="admin-content-needs" style="display:none;"></div>
+          <div id="admin-content-industrial" style="display:none;"></div>
+          <div id="admin-content-questions" style="display:none;"></div>
+        </div>
+
+        <!-- PAIEMENTS -->
+        <div id="admin-view-payments" style="display:none;">
+          <div class="section-label">💰 En attente de validation</div>
+          <div id="admin-payments-pending-full"></div>
+          <div class="section-label">📋 Historique complet</div>
+          <div id="admin-payments-history"></div>
+        </div>
+
+        <!-- DIFFUSION -->
+        <div id="admin-view-broadcast" style="display:none;">
+          <p style="font-size:13px;color:var(--ink-soft);margin:0 0 16px;">Envoyez une notification à tous les utilisateurs de la plateforme (simule une diffusion WhatsApp groupée — sera réellement connectée à l'étape production).</p>
+          <label class="field-label">Cibler (optionnel)</label>
+          <div class="choice-row" id="broadcast-target">
+            <div class="chip selected" data-value="tous">Tous</div>
+            <div class="chip" data-value="producteur">Producteurs</div>
+            <div class="chip" data-value="acheteur">Acheteurs</div>
+            <div class="chip" data-value="industriel">Industriels</div>
+          </div>
+          <label class="field-label">Message</label>
+      <textarea class="input-big" id="broadcast-message" style="min-height:80px;" placeholder="Ex : Nouvelle fonctionnalité disponible, la carte des zones !"></textarea>
+      <button class="submit-btn" style="background:var(--gold-dark);" onclick="handleBroadcast()">📢 Envoyer la diffusion</button>
+      <div class="section-label" style="margin-top:24px;">Historique des diffusions</div>
+      <div id="admin-broadcast-history"></div>
+    </div>
+
+    <!-- SUGGESTIONS -->
+    <div id="admin-view-suggestions" style="display:none;">
+      <div id="admin-suggestions-list"></div>
+    </div>
+      </div>
+    </div>
+  </div>
+  <!-- ===== NAV BAR ===== -->
+  <div class="bottomnav">
+    <button class="navbtn active" data-nav="accueil" onclick="showScreen('accueil')"><span class="navicon">🏠</span>Accueil</button>
+    <button class="navbtn" data-nav="acheter" onclick="showScreen('acheter')"><span class="navicon">🛒</span>Acheter</button>
+    <button class="navbtn" data-nav="vendre" onclick="handleNavProtected('vendre')"><span class="navicon">🌾</span>Vendre</button>
+    <button class="navbtn" data-nav="questions" onclick="showScreen('questions')"><span class="navicon">❓</span>Questions</button>
+    <button class="navbtn" data-nav="apropos" onclick="showScreen('apropos')"><span class="navicon">ℹ️</span>À propos</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-header">
+      <b>Notifications</b>
+      <span class="icon-btn" style="width:28px;height:28px;font-size:13px;" onclick="toggleNotifications()">✕</span>
+    </div>
+    <div id="notif-list"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
