@@ -48,6 +48,7 @@
     </div>
 
     <div id="reg-step-form">
+      <input type="text" id="reg-honeypot" name="website" autocomplete="off" tabindex="-1" style="position:absolute;left:-9999px;opacity:0;" aria-hidden="true">
       <label class="field-label">Votre nom</label>
       <input class="input-big" id="reg-name" placeholder="Ex : Étienne Mbarga">
 
@@ -71,16 +72,12 @@
       </div>
 
       <button class="submit-btn" onclick="handleRegisterStart()">Continuer</button>
-      <p style="text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:10px;">En continuant, vous acceptez nos conditions d'utilisation</p>
+      <p style="text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:10px;">En continuant, vous acceptez nos <a href="#" onclick="event.preventDefault(); showScreen('cgu');" style="color:var(--leaf-dark);font-weight:600;">conditions d'utilisation</a></p>
       <button class="skip-link" onclick="showScreen('login')">Déjà un compte ? Se connecter</button>
-    </div>
 
-    <div id="reg-step-otp" style="display:none;">
-      <p style="font-size:13.5px;color:var(--ink-soft);text-align:center;margin:10px 0 4px;">Entrez le code à 4 chiffres envoyé par SMS/WhatsApp au numéro indiqué</p>
-      <input class="input-big" id="otp-input" maxlength="4" style="text-align:center;font-size:22px;letter-spacing:8px;font-weight:700;" placeholder="0000">
-      <p id="otp-demo-hint" style="text-align:center;font-size:11.5px;color:var(--gold-dark);font-weight:700;margin-top:8px;"></p>
-      <button class="submit-btn" onclick="handleVerifyOtp()">Vérifier mon numéro</button>
-      <button class="skip-link" onclick="document.getElementById('reg-step-otp').style.display='none';document.getElementById('reg-step-form').style.display='block';">← Modifier mes informations</button>
+      <p style="text-align:center;font-size:11px;color:var(--ink-soft);margin-top:14px;line-height:1.4;">
+        ℹ️ Votre numéro sera vérifié par notre équipe via WhatsApp après inscription
+      </p>
     </div>
   </div>
 
@@ -199,8 +196,15 @@
     <div class="section-label">📢 Besoins des acheteurs près de chez vous</div>
     <div id="home-needs-list"></div>
 
-    <div class="section-label">Disponibilité par zone</div>
+    <div class="section-label">Disponibilité par zone <a onclick="showScreen('marche')">💰 Prix du marché →</a></div>
     <div id="home-zones-list"></div>
+  </div>
+
+  <!-- ===== PRIX DU MARCHÉ ===== -->
+  <div class="screen" id="screen-marche">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Prix du marché</div><div style="width:34px;"></div></div>
+    <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;">Prix moyens calculés à partir des annonces actives publiées sur la plateforme, toutes zones confondues.</p>
+    <div id="market-prices-list"></div>
   </div>
 
   <!-- ===== VENDRE ===== -->
@@ -225,6 +229,9 @@
     <input class="input-big" id="sell-zone" placeholder="Ex : Ntui, Centre">
 
     <button class="submit-btn" onclick="handleCreateListing()">Publier mon annonce</button>
+
+    <div class="section-label" style="margin-top:28px;">📋 Mes annonces</div>
+    <div id="my-listings"></div>
   </div>
 
   <!-- ===== ACHETER ===== -->
@@ -237,6 +244,14 @@
     </div>
 
     <div id="buyview-dispo">
+      <input class="input-big" id="buy-search-zone" placeholder="🔍 Filtrer par zone (ex : Ntui)" oninput="renderBuyListings()">
+      <div class="choice-row" id="buy-filter-product" onclick="setTimeout(renderBuyListings, 0)" style="margin-top:10px;margin-bottom:14px;">
+        <div class="chip selected" data-value="tous">Tous produits</div>
+        <div class="chip" data-value="racine_fraiche">Racine fraîche</div>
+        <div class="chip" data-value="gari">Gari</div>
+        <div class="chip" data-value="baton">Bâton</div>
+        <div class="chip" data-value="farine">Farine</div>
+      </div>
       <div id="buy-listings"></div>
     </div>
 
@@ -284,6 +299,9 @@
       </div>
 
       <button class="submit-btn" style="background:var(--terracotta);" onclick="handleCreateNeed()">Publier mon besoin</button>
+
+      <div class="section-label" style="margin-top:28px;">📋 Mes besoins publiés</div>
+      <div id="my-needs"></div>
     </div>
   </div>
 
@@ -520,7 +538,52 @@
     <textarea class="input-big" id="suggestion-message" style="margin-top:10px; min-height:80px;" placeholder="Votre suggestion..."></textarea>
     <button class="submit-btn" style="background:var(--leaf); margin-top:14px;" onclick="handleSubmitSuggestion()">Envoyer ma suggestion</button>
 
-    <button class="skip-link" onclick="showScreen('admin-login')" style="opacity:0.5; text-decoration:none; font-size:11px; margin-top:24px;">Accès administrateur</button>
+    <button class="skip-link" onclick="showScreen('cgu')" style="text-decoration:none; font-size:12px; margin-top:20px;">📄 Conditions d'utilisation & confidentialité</button>
+    <button class="skip-link" onclick="showScreen('admin-login')" style="opacity:0.5; text-decoration:none; font-size:11px; margin-top:10px;">Accès administrateur</button>
+  </div>
+
+  <!-- ===== CONDITIONS D'UTILISATION ===== -->
+  <div class="screen" id="screen-cgu">
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('apropos')">←</div><div class="brand" style="font-size:15px;">Conditions & confidentialité</div><div style="width:34px;"></div></div>
+
+    <div class="cgu-text">
+      <p class="cgu-updated">Dernière mise à jour : juillet 2026</p>
+
+      <h3>1. Qui nous sommes</h3>
+      <p>Manioc Connect est une plateforme camerounaise qui connecte les producteurs, acheteurs et industriels du manioc partout au Cameroun. Siège : Bertoua, Cameroun. Contact : contact.agrojobers@gmail.com · WhatsApp +237 675 998 580.</p>
+
+      <h3>2. Ce que propose la plateforme</h3>
+      <p>Publication d'annonces de vente, de besoins d'achat, d'annonces industrielles, de questions filière, et un abonnement Premium optionnel. <b>Manioc Connect est un intermédiaire de mise en relation</b> : la plateforme ne participe pas aux transactions entre utilisateurs, n'en garantit ni la qualité, ni la livraison, ni le paiement, et n'en est pas responsable.</p>
+
+      <h3>3. Inscription et compte</h3>
+      <p>Un numéro de téléphone = un seul compte. Votre numéro est vérifié manuellement par notre équipe via WhatsApp après inscription. Vous êtes responsable de l'exactitude de vos informations. Tout compte frauduleux ou abusif peut être suspendu ou supprimé.</p>
+
+      <h3>4. Contenu publié</h3>
+      <p>En publiant une annonce, un besoin ou une question, vous garantissez l'exactitude des informations fournies. Nous pouvons modérer ou supprimer tout contenu non conforme, sans préavis.</p>
+
+      <h3>5. Abonnement Premium et paiement</h3>
+      <p>Paiement par Mobile Money (Orange Money / MTN) suivi d'une validation manuelle après vérification de la référence de transaction. Activation généralement sous quelques heures. En cas d'erreur de paiement, contactez-nous sur WhatsApp avec votre référence de transaction ; les demandes sont examinées au cas par cas. Les tarifs peuvent évoluer, sans effet rétroactif sur un abonnement déjà payé.</p>
+
+      <h3>6. Vos données personnelles</h3>
+      <p><b>Collectées :</b> nom, téléphone, rôle, zone, et selon votre profil (variétés, superficie, type d'acheteur, entreprise...), photo de profil optionnelle.</p>
+      <p><b>Utilisées pour :</b> faire fonctionner votre compte, vous envoyer des informations utiles si vous l'avez accepté, vous contacter pour vérification/support, améliorer la plateforme. <b>Nous ne vendons jamais vos données à des tiers.</b></p>
+      <p><b>Vos droits :</b> consulter/modifier vos informations depuis votre profil, retirer votre consentement marketing, demander la suppression complète de votre compte via WhatsApp ou email.</p>
+
+      <h3>7. Sécurité</h3>
+      <p>Nous mettons en œuvre des mesures raisonnables pour protéger vos données (connexion chiffrée, accès restreint à la base de données), sans pouvoir garantir une sécurité absolue.</p>
+
+      <h3>8. Limitation de responsabilité</h3>
+      <p>Manioc Connect fournit la plateforme "en l'état" et n'est pas responsable des litiges, pertes ou dommages résultant des transactions entre utilisateurs, ni de l'exactitude des informations qu'ils publient.</p>
+
+      <h3>9. Modifications</h3>
+      <p>Ces conditions peuvent être mises à jour ; les changements significatifs seront annoncés sur la plateforme.</p>
+
+      <h3>10. Droit applicable</h3>
+      <p>Ces conditions sont régies par le droit camerounais. Tout litige relève des tribunaux compétents du Cameroun.</p>
+
+      <h3>11. Contact</h3>
+      <p>WhatsApp +237 675 998 580 · Email contact.agrojobers@gmail.com · Bertoua, Cameroun.</p>
+    </div>
   </div>
 
   <!-- ===== CONNEXION ADMIN ===== -->
@@ -565,6 +628,10 @@
             <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-listings">0</div><div class="admin-stat-label">Annonces</div></div>
             <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-needs">0</div><div class="admin-stat-label">Besoins</div></div>
             <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-questions">0</div><div class="admin-stat-label">Questions</div></div>
+          </div>
+          <div class="admin-stats-row">
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-views-today">0</div><div class="admin-stat-label">Vues (24h)</div></div>
+            <div class="admin-stat"><div class="admin-stat-num" id="admin-stat-views-total">0</div><div class="admin-stat-label">Vues totales</div></div>
           </div>
           <div class="section-label">💰 Paiements à valider en priorité</div>
           <div id="admin-pending-payments"></div>
@@ -637,6 +704,8 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="global-loader" id="global-loader"><div class="spinner"></div></div>
 
   <div class="notif-panel" id="notif-panel">
     <div class="notif-panel-header">

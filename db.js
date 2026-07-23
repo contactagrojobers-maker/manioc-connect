@@ -18,8 +18,8 @@
  * ------------------------------------------------------------
  */
 
-const SUPABASE_URL = 'https://iaycxzbesjlrjwkynnbs.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN4emJlc2pscmp3a3lubmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ2MzIsImV4cCI6MjEwMDI0MDYzMn0.e8ynhFH70xfJAAfIM-1ujky-sdHbHeHHKOmi5gEgWG8';
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';
+const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_PUBLIC';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -87,7 +87,7 @@ const db = {
     if (!error) {
       await this.createNotification(
         `Nouvelle demande de paiement de ${amount} FCFA en attente de validation`,
-        { audience: 'admin' }
+        { audience: 'admin', notify_email: true }
       );
     }
     return { data, error };
@@ -160,6 +160,16 @@ const db = {
     return { data: !error, error };
   },
 
+  async adminVerifyPhone(userId) {
+    const { error } = await supabaseClient.from('profiles').update({ phone_verified: true }).eq('id', userId);
+    const currentUser = this.getCurrentUser();
+    if (currentUser && currentUser.id === userId) {
+      const { data: refreshed } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+      if (refreshed) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(refreshed));
+    }
+    return { data: !error, error };
+  },
+
   async adminSetPremiumManual(userId, value) {
     const updates = { is_premium: value };
     if (value) updates.premium_since = new Date().toISOString();
@@ -225,7 +235,17 @@ const db = {
   // -- ANNONCES DE VENTE --
   async listListings() {
     const { data, error } = await supabaseClient
+      .from('listings').select('*').eq('status', 'active').order('created_at', { ascending: false });
+    return { data: data || [], error };
+  },
+  async listAllListingsAdmin() {
+    const { data, error } = await supabaseClient
       .from('listings').select('*').order('created_at', { ascending: false });
+    return { data: data || [], error };
+  },
+  async listMyListings(sellerId) {
+    const { data, error } = await supabaseClient
+      .from('listings').select('*').eq('seller_id', sellerId).order('created_at', { ascending: false });
     return { data: data || [], error };
   },
   async createListing(listing) {
@@ -239,9 +259,30 @@ const db = {
     }
     return { data, error };
   },
+  async markListingSold(id) {
+    const { error } = await supabaseClient.from('listings').update({ status: 'vendu' }).eq('id', id);
+    return { data: !error, error };
+  },
+  // Retrait par le propriétaire : passe par une simple mise à jour de statut
+  // (autorisée pour tous) plutôt qu'une vraie suppression (réservée à l'admin
+  // authentifié depuis le renforcement de sécurité RLS).
+  async deleteMyListing(id) {
+    const { error } = await supabaseClient.from('listings').update({ status: 'retire' }).eq('id', id);
+    return { data: !error, error };
+  },
 
   // -- BESOINS (achat) --
   async listNeeds() {
+    const { data, error } = await supabaseClient
+      .from('needs').select('*').eq('status', 'active').order('created_at', { ascending: false });
+    return { data: data || [], error };
+  },
+  async listMyNeeds(buyerId) {
+    const { data, error } = await supabaseClient
+      .from('needs').select('*').eq('buyer_id', buyerId).order('created_at', { ascending: false });
+    return { data: data || [], error };
+  },
+  async listAllNeedsAdmin() {
     const { data, error } = await supabaseClient
       .from('needs').select('*').order('created_at', { ascending: false });
     return { data: data || [], error };
@@ -256,6 +297,14 @@ const db = {
       );
     }
     return { data, error };
+  },
+  async markNeedSatisfied(id) {
+    const { error } = await supabaseClient.from('needs').update({ status: 'satisfait' }).eq('id', id);
+    return { data: !error, error };
+  },
+  async deleteMyNeed(id) {
+    const { error } = await supabaseClient.from('needs').update({ status: 'retire' }).eq('id', id);
+    return { data: !error, error };
   },
 
   // -- INDUSTRIELS --
@@ -282,6 +331,22 @@ const db = {
     return { data, error };
   },
 
+  // -- RÉPONSES AUX QUESTIONS --
+  async listQuestionReplies(questionId) {
+    const { data, error } = await supabaseClient
+      .from('question_replies').select('*').eq('question_id', questionId).order('created_at', { ascending: true });
+    return { data: data || [], error };
+  },
+  async createQuestionReply(questionId, authorName, body) {
+    const { data, error } = await supabaseClient
+      .from('question_replies').insert([{ question_id: questionId, author_name: authorName, body }]).select().single();
+    if (!error) {
+      const { data: q } = await supabaseClient.from('questions').select('reply_count').eq('id', questionId).single();
+      await supabaseClient.from('questions').update({ reply_count: (q?.reply_count || 0) + 1 }).eq('id', questionId);
+    }
+    return { data, error };
+  },
+
   // -- NOTIFICATIONS --
   // audience: 'admin' (visible uniquement dans l'espace admin) ou 'user' (visible dans la
   // cloche des utilisateurs, mais filtrée par pertinence : rôle, zone, ou utilisateur précis)
@@ -292,6 +357,7 @@ const db = {
       target_user_id: options.target_user_id || null,
       target_role: options.target_role || null,
       target_zone: options.target_zone || null,
+      notify_email: options.notify_email || false,
     }]);
   },
 
@@ -369,9 +435,42 @@ const db = {
   },
 
   // -- ZONES (agrégation calculée côté client à partir des annonces) --
+  // -- STATISTIQUES DE VISITE (analytics maison) --
+  async logPageView(screen) {
+    await supabaseClient.from('page_views').insert([{ screen }]);
+  },
+  async adminPageViewStats() {
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const { count: today } = await supabaseClient
+      .from('page_views').select('*', { count: 'exact', head: true }).gte('created_at', since);
+    const { count: total } = await supabaseClient
+      .from('page_views').select('*', { count: 'exact', head: true });
+    return { data: { today: today || 0, total: total || 0 }, error: null };
+  },
+
+  // -- PRIX DU MARCHÉ (moyenne calculée à partir des annonces actives) --
+  async marketPrices() {
+    const { data: rows, error } = await supabaseClient
+      .from('listings').select('*').eq('status', 'active');
+    if (error) return { data: [], error };
+    const byProduct = {};
+    (rows || []).forEach(r => {
+      if (!r.price_per_unit) return;
+      if (!byProduct[r.product_type]) byProduct[r.product_type] = { sum: 0, count: 0, min: Infinity, max: -Infinity };
+      byProduct[r.product_type].sum += Number(r.price_per_unit);
+      byProduct[r.product_type].count += 1;
+      byProduct[r.product_type].min = Math.min(byProduct[r.product_type].min, Number(r.price_per_unit));
+      byProduct[r.product_type].max = Math.max(byProduct[r.product_type].max, Number(r.price_per_unit));
+    });
+    const result = Object.entries(byProduct).map(([product_type, v]) => ({
+      product_type, avg: Math.round(v.sum / v.count), min: v.min, max: v.max, sample_size: v.count,
+    }));
+    return { data: result, error: null };
+  },
+
   async zoneAvailability() {
     const { data: rows, error } = await supabaseClient
-      .from('listings').select('*').neq('status', 'groupe');
+      .from('listings').select('*').eq('status', 'active');
     if (error) return { data: [], error };
 
     const byZone = {};

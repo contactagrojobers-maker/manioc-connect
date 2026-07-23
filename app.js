@@ -47,11 +47,40 @@ function normalizeZoneName(raw) {
   return s;
 }
 
+// ---------- ANTI-SPAM : délai minimum entre publications du même type ----------
+function checkCooldown(actionKey, cooldownMs = 8000) {
+  const lastKey = 'mc_cooldown_' + actionKey;
+  const last = Number(localStorage.getItem(lastKey) || 0);
+  const now = Date.now();
+  if (now - last < cooldownMs) {
+    const remaining = Math.ceil((cooldownMs - (now - last)) / 1000);
+    showToast(`Merci de patienter ${remaining}s avant de publier à nouveau`);
+    return false;
+  }
+  localStorage.setItem(lastKey, String(now));
+  return true;
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+let LOADING_COUNT = 0;
+function showLoading() {
+  LOADING_COUNT++;
+  document.getElementById('global-loader').classList.add('show');
+}
+function hideLoading() {
+  LOADING_COUNT = Math.max(0, LOADING_COUNT - 1);
+  if (LOADING_COUNT === 0) document.getElementById('global-loader').classList.remove('show');
+}
+async function withLoading(promise) {
+  showLoading();
+  try { return await promise; }
+  finally { hideLoading(); }
 }
 
 function showScreen(name) {
@@ -62,13 +91,17 @@ function showScreen(name) {
   if (navBtn) navBtn.classList.add('active');
 
   document.querySelector('.app-shell').classList.toggle('admin-active', name === 'admin');
+  if (name === 'bienvenue') window._regFormShownAt = Date.now();
 
-  if (name === 'accueil') renderHome();
-  if (name === 'acheter') renderBuyListings();
-  if (name === 'profil') renderProfile();
-  if (name === 'industriels') renderIndustrial();
-  if (name === 'questions') renderQuestions();
-  if (name === 'admin') renderAdminDashboard();
+  if (name === 'accueil') withLoading(renderHome());
+  if (name === 'acheter') { withLoading(renderBuyListings()); renderMyNeeds(); }
+  if (name === 'vendre') withLoading(renderMyListings());
+  if (name === 'profil') withLoading(renderProfile());
+  if (name === 'industriels') withLoading(renderIndustrial());
+  if (name === 'questions') withLoading(renderQuestions());
+  if (name === 'admin') withLoading(renderAdminDashboard());
+  if (name === 'marche') withLoading(renderMarketPrices());
+  db.logPageView(name);
   window.scrollTo(0, 0);
 }
 
@@ -117,13 +150,20 @@ function isValidCMPhone(raw) {
   return /^6[5-9]\d{7}$/.test(digits);
 }
 
-let PENDING_OTP_CODE = null;
-
-function handleRegisterStart() {
+async function handleRegisterStart() {
   const phone = document.getElementById('reg-phone').value.trim();
   const name = document.getElementById('reg-name').value.trim();
   const zone = document.getElementById('reg-zone').value.trim();
   const statusEl = document.getElementById('reg-phone-status');
+
+  // Anti-spam basique : champ piège (honeypot) + délai minimum de remplissage.
+  // Un bot qui remplit tout instantanément est très probablement automatisé.
+  const honeypot = document.getElementById('reg-honeypot').value;
+  const elapsed = Date.now() - (window._regFormShownAt || 0);
+  if (honeypot || elapsed < 1200) {
+    showToast('Compte créé ✓ — votre numéro sera vérifié par notre équipe sous peu');
+    return; // on ne crée rien, mais on ne révèle pas au bot qu'il a été détecté
+  }
 
   if (!name || !zone) { showToast('Merci de remplir tous les champs'); return; }
 
@@ -133,22 +173,7 @@ function handleRegisterStart() {
     return;
   }
   statusEl.textContent = '';
-
-  // Simule l'envoi d'un code SMS (en production : vrai fournisseur SMS/OTP)
-  PENDING_OTP_CODE = String(Math.floor(1000 + Math.random() * 9000));
-  document.getElementById('reg-step-form').style.display = 'none';
-  document.getElementById('reg-step-otp').style.display = 'block';
-  document.getElementById('otp-demo-hint').textContent = `Mode démo — votre code : ${PENDING_OTP_CODE}`;
-  showToast('Code de vérification envoyé par SMS');
-}
-
-function handleVerifyOtp() {
-  const entered = document.getElementById('otp-input').value.trim();
-  if (entered !== PENDING_OTP_CODE) {
-    showToast('Code incorrect, réessayez');
-    return;
-  }
-  handleRegister();
+  await handleRegister();
 }
 
 async function handleLogin() {
@@ -156,7 +181,8 @@ async function handleLogin() {
   const errorEl = document.getElementById('login-error');
   const normalized = normalizeCMPhone(phoneRaw);
 
-  const { data: profile } = await db.findProfileByPhone(normalized);
+  const { data: profile, error } = await db.findProfileByPhone(normalized);
+  if (error) { errorEl.textContent = 'Erreur réseau, réessayez dans un instant'; return; }
   if (!profile) {
     errorEl.textContent = "Aucun compte trouvé avec ce numéro. Vérifiez, ou inscrivez-vous.";
     return;
@@ -186,12 +212,12 @@ async function handleRegister() {
   const zone = normalizeZoneName(document.getElementById('reg-zone').value.trim());
   const marketingOptIn = document.getElementById('reg-consent').checked;
 
-  await db.createProfile({ full_name: name, phone, phone_verified: true, role, zone, marketing_opt_in: marketingOptIn });
-  // Réinitialise le formulaire d'inscription pour la prochaine fois
-  document.getElementById('reg-step-otp').style.display = 'none';
-  document.getElementById('reg-step-form').style.display = 'block';
-  document.getElementById('otp-input').value = '';
-  showToast('Compte créé et numéro vérifié ✓');
+  const { error } = await db.createProfile({ full_name: name, phone, phone_verified: false, role, zone, marketing_opt_in: marketingOptIn });
+  if (error) {
+    showToast(error.code === '23505' ? 'Ce numéro est déjà utilisé par un compte existant' : 'Erreur réseau — réessayez dans un instant');
+    return;
+  }
+  showToast('Compte créé ✓ — votre numéro sera vérifié par notre équipe sous peu');
   updateNotifBadge();
   updateProfileNavIcon();
   showScreen('abonnement');
@@ -216,7 +242,8 @@ async function handlePayment() {
 
   if (!phone || !reference) { showToast('Merci de renseigner votre numéro et la référence de transaction'); return; }
 
-  await db.submitPaymentRequest({ userId: user.id, amount: 4000, provider, phone, reference });
+  const { error } = await db.submitPaymentRequest({ userId: user.id, amount: 4000, provider, phone, reference });
+  if (error) { showToast('Erreur réseau — le paiement n\'a pas pu être enregistré, réessayez'); return; }
   showToast('Paiement enregistré — en attente de validation ✓');
   updateNotifBadge();
   afterAuthContinue();
@@ -225,6 +252,7 @@ async function handlePayment() {
 // ---------- VENDRE ----------
 async function handleCreateListing() {
   if (!requireAuth('vendre')) return;
+  if (!checkCooldown('listing')) return;
   const user = db.getCurrentUser();
   const product_type = getSelectedValue('sell-product');
   const quantity = parseFloat(document.getElementById('sell-qty').value);
@@ -233,13 +261,53 @@ async function handleCreateListing() {
 
   if (!quantity || !zone) { showToast('Merci de remplir la quantité et la zone'); return; }
 
-  await db.createListing({
+  const { error } = await db.createListing({
+    seller_id: user ? user.id : null,
     seller_name: user ? user.full_name : 'Anonyme',
-    product_type, quantity, unit: 'kg', price_per_unit, zone, region: zone,
+    product_type, quantity, unit: 'kg', price_per_unit, zone, region: zone, status: 'active',
   });
+  if (error) { showToast('Erreur réseau — votre annonce n\'a pas pu être publiée, réessayez'); return; }
   showToast('Annonce publiée ✓');
   updateNotifBadge();
   showScreen('accueil');
+}
+
+async function renderMyListings() {
+  const user = db.getCurrentUser();
+  const container = document.getElementById('my-listings');
+  if (!container) return;
+  if (!user) { container.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Connectez-vous pour voir vos annonces.</p>'; return; }
+
+  const STATUS_LABELS_LISTING = { vendu: 'vendue', groupe: 'intégrée à un groupement', retire: 'retirée' };
+  const { data: mine } = await db.listMyListings(user.id);
+  container.innerHTML = mine.map(l => `
+    <div class="admin-content-card">
+      <div class="top-row">
+        <div>
+          <div class="title">${PRODUCT_LABELS[l.product_type] || l.product_type} — ${l.quantity} ${l.unit} ${l.status !== 'active' ? `<span style="color:var(--ink-soft);font-weight:400;">(${STATUS_LABELS_LISTING[l.status] || l.status})</span>` : ''}</div>
+          <div class="meta">📍 ${l.zone}${l.price_per_unit ? ' · ' + l.price_per_unit + ' FCFA' : ''}</div>
+        </div>
+      </div>
+      ${l.status === 'active' ? `
+      <div class="admin-user-actions">
+        <button class="admin-mini-btn" style="border-color:var(--leaf);color:var(--leaf);" onclick="handleMarkListingSold('${l.id}')">✓ Marquer vendue</button>
+        <button class="admin-mini-btn danger" onclick="handleDeleteMyListing('${l.id}')">🗑️ Retirer</button>
+      </div>` : ''}
+    </div>
+  `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune annonce publiée pour le moment.</p>';
+}
+
+async function handleMarkListingSold(id) {
+  await db.markListingSold(id);
+  showToast('Annonce marquée comme vendue ✓');
+  renderMyListings();
+}
+
+async function handleDeleteMyListing(id) {
+  if (!confirm('Retirer définitivement cette annonce ?')) return;
+  await db.deleteMyListing(id);
+  showToast('Annonce retirée');
+  renderMyListings();
 }
 
 // ---------- ACHETER : onglets ----------
@@ -259,7 +327,16 @@ const PRODUCT_EMOJI = {
 };
 
 async function renderBuyListings() {
-  const { data: listings } = await db.listListings();
+  const { data: allListings } = await db.listListings();
+  const zoneFilter = (document.getElementById('buy-search-zone')?.value || '').trim().toLowerCase();
+  const productFilter = getSelectedValue('buy-filter-product') || 'tous';
+
+  const listings = allListings.filter(l => {
+    const matchZone = !zoneFilter || (l.zone || '').toLowerCase().includes(zoneFilter);
+    const matchProduct = productFilter === 'tous' || l.product_type === productFilter;
+    return matchZone && matchProduct;
+  });
+
   const container = document.getElementById('buy-listings');
   container.innerHTML = listings.map(l => `
     <div class="listing">
@@ -271,12 +348,13 @@ async function renderBuyListings() {
       </div>
       <button class="call-btn">📞</button>
     </div>
-  `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune annonce pour le moment.</p>';
+  `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune annonce ne correspond à votre recherche.</p>';
 }
 
 // ---------- PUBLIER UN BESOIN ----------
 async function handleCreateNeed() {
   if (!requireAuth('acheter', 'besoin')) return;
+  if (!checkCooldown('need')) return;
   const user = db.getCurrentUser();
   const product_type = getSelectedValue('need-product');
   const quantity = parseFloat(document.getElementById('need-qty').value);
@@ -289,14 +367,54 @@ async function handleCreateNeed() {
 
   if (!quantity || !zone) { showToast('Merci de remplir la quantité et la zone'); return; }
 
-  await db.createNeed({
+  const { error } = await db.createNeed({
+    buyer_id: user ? user.id : null,
     buyer_name: user ? user.full_name : 'Anonyme',
     product_type, quantity, unit: 'kg', budget_per_unit, zone, region: zone,
-    quality_specs, quality_notes, payment_terms, is_urgent,
+    quality_specs, quality_notes, payment_terms, is_urgent, status: 'active',
   });
+  if (error) { showToast('Erreur réseau — votre besoin n\'a pas pu être publié, réessayez'); return; }
   showToast('Besoin publié — visible par les producteurs de votre zone ✓');
   updateNotifBadge();
   showScreen('accueil');
+}
+
+async function renderMyNeeds() {
+  const user = db.getCurrentUser();
+  const container = document.getElementById('my-needs');
+  if (!container) return;
+  if (!user) { container.innerHTML = '<p style="color:var(--ink-soft);font-size:13px;">Connectez-vous pour voir vos besoins.</p>'; return; }
+
+  const STATUS_LABELS_NEED = { satisfait: 'satisfait', retire: 'retiré' };
+  const { data: mine } = await db.listMyNeeds(user.id);
+  container.innerHTML = mine.map(n => `
+    <div class="admin-content-card">
+      <div class="top-row">
+        <div>
+          <div class="title">${n.quantity} ${n.unit} de ${(PRODUCT_LABELS[n.product_type] || n.product_type).toLowerCase()} ${n.status !== 'active' ? `<span style="color:var(--ink-soft);font-weight:400;">(${STATUS_LABELS_NEED[n.status] || n.status})</span>` : ''}</div>
+          <div class="meta">📍 ${n.zone}${n.is_urgent ? ' · 🔥 Urgent' : ''}</div>
+        </div>
+      </div>
+      ${n.status === 'active' ? `
+      <div class="admin-user-actions">
+        <button class="admin-mini-btn" style="border-color:var(--leaf);color:var(--leaf);" onclick="handleMarkNeedSatisfied('${n.id}')">✓ Marquer satisfait</button>
+        <button class="admin-mini-btn danger" onclick="handleDeleteMyNeed('${n.id}')">🗑️ Retirer</button>
+      </div>` : ''}
+    </div>
+  `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucun besoin publié pour le moment.</p>';
+}
+
+async function handleMarkNeedSatisfied(id) {
+  await db.markNeedSatisfied(id);
+  showToast('Besoin marqué comme satisfait ✓');
+  renderMyNeeds();
+}
+
+async function handleDeleteMyNeed(id) {
+  if (!confirm('Retirer définitivement ce besoin ?')) return;
+  await db.deleteMyNeed(id);
+  showToast('Besoin retiré');
+  renderMyNeeds();
 }
 
 // ---------- ACCUEIL : rendu dynamique ----------
@@ -364,6 +482,7 @@ async function renderIndustrial() {
 
 async function handleCreateIndustrial() {
   if (!requireAuth('industriels')) return;
+  if (!checkCooldown('industrial')) return;
   const company_name = document.getElementById('ind-company').value.trim();
   const post_type = getSelectedValue('ind-type');
   const description = document.getElementById('ind-description').value.trim();
@@ -388,18 +507,56 @@ async function renderQuestions() {
   const { data: questions } = await db.listQuestions();
   const container = document.getElementById('questions-list');
   container.innerHTML = questions.map(q => `
-    <div class="need-card" style="border-left-color:var(--leaf);">
+    <div class="need-card" style="border-left-color:var(--leaf); flex-direction:column; align-items:stretch;">
       <div>
         <div class="title">${q.title}</div>
         <div class="meta">${q.author_name} · Zone : ${q.zone}</div>
         <span class="need-urgent" style="color:var(--leaf-dark); background:var(--cream-2);">${TAG_LABELS[q.tag] || q.tag} · ${q.reply_count || 0} réponse${(q.reply_count || 0) > 1 ? 's' : ''}</span>
       </div>
+      <button class="admin-mini-btn" style="margin-top:10px;align-self:flex-start;" onclick="toggleQuestionReplies('${q.id}')">💬 Voir / répondre</button>
+      <div id="replies-${q.id}" style="display:none; margin-top:10px;">
+        <div id="replies-list-${q.id}" style="margin-bottom:10px;"></div>
+        <div style="display:flex; gap:8px;">
+          <input class="input-big" id="reply-input-${q.id}" placeholder="Votre réponse..." style="flex:1;">
+          <button class="call-btn" onclick="handleReplyToQuestion('${q.id}')">➤</button>
+        </div>
+      </div>
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune question pour le moment.</p>';
 }
 
+async function toggleQuestionReplies(questionId) {
+  const box = document.getElementById('replies-' + questionId);
+  const isOpen = box.style.display !== 'none';
+  if (isOpen) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+
+  const { data: replies } = await db.listQuestionReplies(questionId);
+  document.getElementById('replies-list-' + questionId).innerHTML = replies.map(r => `
+    <div style="background:var(--cream-2); border-radius:10px; padding:8px 10px; margin-bottom:6px; font-size:12.5px;">
+      <b>${r.author_name}</b> · ${timeAgo(r.created_at)}<br>${r.body}
+    </div>
+  `).join('') || '<p style="color:var(--ink-soft);font-size:12px;">Aucune réponse pour le moment. Soyez le premier à répondre !</p>';
+}
+
+async function handleReplyToQuestion(questionId) {
+  if (!requireAuth('questions')) return;
+  if (!checkCooldown('reply', 4000)) return;
+  const user = db.getCurrentUser();
+  const input = document.getElementById('reply-input-' + questionId);
+  const body = input.value.trim();
+  if (!body) { showToast('Écrivez votre réponse avant d\'envoyer'); return; }
+
+  await db.createQuestionReply(questionId, user.full_name, body);
+  input.value = '';
+  showToast('Réponse publiée ✓');
+  await renderQuestions();
+  await toggleQuestionReplies(questionId); // rouvre le fil avec la nouvelle réponse visible
+}
+
 async function handleCreateQuestion() {
   if (!requireAuth('questions')) return;
+  if (!checkCooldown('question')) return;
   const user = db.getCurrentUser();
   const title = document.getElementById('q-title').value.trim();
   const body = document.getElementById('q-body').value.trim();
@@ -437,7 +594,8 @@ async function toggleNotifications() {
 }
 
 function timeAgo(ts) {
-  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  const t = typeof ts === 'number' ? ts : new Date(ts).getTime();
+  const diffMin = Math.floor((Date.now() - t) / 60000);
   if (diffMin < 1) return "à l'instant";
   if (diffMin < 60) return `il y a ${diffMin} min`;
   const diffH = Math.floor(diffMin / 60);
@@ -508,8 +666,8 @@ async function renderAdminDashboard() {
 
   const { data: profiles } = await db.adminListProfiles();
   const { data: pendingPayments } = await db.listPendingPayments();
-  const { data: listings } = await db.listListings();
-  const { data: needs } = await db.listNeeds();
+  const { data: listings } = await db.listAllListingsAdmin();
+  const { data: needs } = await db.listAllNeedsAdmin();
   const { data: questions } = await db.listQuestions();
 
   document.getElementById('admin-stat-total').textContent = profiles.length;
@@ -518,6 +676,10 @@ async function renderAdminDashboard() {
   document.getElementById('admin-stat-listings').textContent = listings.length;
   document.getElementById('admin-stat-needs').textContent = needs.length;
   document.getElementById('admin-stat-questions').textContent = questions.length;
+
+  const { data: viewStats } = await db.adminPageViewStats();
+  document.getElementById('admin-stat-views-today').textContent = viewStats.today;
+  document.getElementById('admin-stat-views-total').textContent = viewStats.total;
 
   document.getElementById('admin-pending-payments').innerHTML = renderPendingPaymentCards(pendingPayments);
 
@@ -553,22 +715,30 @@ async function renderAdminUsers() {
   const filtered = profiles.filter(p =>
     !search || p.full_name.toLowerCase().includes(search) || p.phone.includes(search) || p.zone.toLowerCase().includes(search)
   );
+  const sorted = filtered.sort((a, b) => (a.phone_verified === b.phone_verified) ? 0 : (a.phone_verified ? 1 : -1));
 
-  document.getElementById('admin-all-users').innerHTML = filtered.map(p => `
+  document.getElementById('admin-all-users').innerHTML = sorted.map(p => `
     <div class="admin-content-card">
       <div class="top-row">
         <div>
-          <div class="title">${p.full_name} ${p.is_premium ? '⭐' : ''}</div>
+          <div class="title">${p.full_name} ${p.is_premium ? '⭐' : ''} ${p.phone_verified ? '' : '<span style="color:var(--terracotta);font-size:11px;font-weight:700;">● Tél. non vérifié</span>'}</div>
           <div class="meta">${ROLE_LABELS[p.role] || p.role} · ${p.zone} · ${formatCMPhone(p.phone)}</div>
         </div>
         <a href="https://wa.me/237${p.phone}" target="_blank" class="admin-mini-btn">💬</a>
       </div>
       <div class="admin-user-actions">
+        ${!p.phone_verified ? `<button class="admin-mini-btn" style="border-color:var(--leaf);color:var(--leaf);" onclick="handleAdminVerifyPhone('${p.id}')">✓ Marquer comme vérifié</button>` : ''}
         <button class="admin-mini-btn premium-on" onclick="handleAdminTogglePremium('${p.id}', ${!p.is_premium})">${p.is_premium ? '⭐ Retirer Premium' : '⭐ Activer Premium'}</button>
         <button class="admin-mini-btn danger" onclick="handleAdminDeleteUser('${p.id}', '${p.full_name.replace(/'/g, "\\'")}')">🗑️ Supprimer le compte</button>
       </div>
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucun utilisateur trouvé.</p>';
+}
+
+async function handleAdminVerifyPhone(userId) {
+  await db.adminVerifyPhone(userId);
+  showToast('Téléphone marqué comme vérifié ✓');
+  renderAdminUsers();
 }
 
 async function handleAdminTogglePremium(userId, value) {
@@ -593,7 +763,7 @@ function switchContentTab(tab) {
 }
 
 async function renderAdminContent() {
-  const { data: listings } = await db.listListings();
+  const { data: listings } = await db.listAllListingsAdmin();
   document.getElementById('admin-content-listings').innerHTML = listings.map(l => `
     <div class="admin-content-card">
       <div class="top-row">
@@ -606,7 +776,7 @@ async function renderAdminContent() {
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune annonce.</p>';
 
-  const { data: needs } = await db.listNeeds();
+  const { data: needs } = await db.listAllNeedsAdmin();
   document.getElementById('admin-content-needs').innerHTML = needs.map(n => `
     <div class="admin-content-card">
       <div class="top-row">
@@ -695,6 +865,20 @@ async function renderAdminBroadcastHistory() {
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune diffusion envoyée pour le moment.</p>';
 }
 
+async function renderMarketPrices() {
+  const { data: prices } = await db.marketPrices();
+  const container = document.getElementById('market-prices-list');
+  container.innerHTML = prices.map(p => `
+    <div class="price-card">
+      <div class="top-row">
+        <div class="product-name">${PRODUCT_EMOJI[p.product_type] || '🌾'} ${PRODUCT_LABELS[p.product_type] || p.product_type}</div>
+        <div class="avg-price">${p.avg} FCFA</div>
+      </div>
+      <div class="range">Entre ${p.min} et ${p.max} FCFA · basé sur ${p.sample_size} annonce${p.sample_size > 1 ? 's' : ''}</div>
+    </div>
+  `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Pas encore assez d\'annonces avec prix pour calculer une moyenne.</p>';
+}
+
 async function handleApprovePayment(paymentId) {
   await db.approvePayment(paymentId);
   showToast('Paiement validé — Premium activé ✓');
@@ -711,6 +895,7 @@ async function handleRejectPayment(paymentId) {
 
 // ---------- SUGGESTIONS ----------
 async function handleSubmitSuggestion() {
+  if (!checkCooldown('suggestion', 15000)) return;
   const name = document.getElementById('suggestion-name').value.trim();
   const message = document.getElementById('suggestion-message').value.trim();
   if (!message) { showToast('Écrivez votre suggestion avant d\'envoyer'); return; }
