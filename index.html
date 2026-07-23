@@ -55,6 +55,10 @@
       <label class="field-label">Numéro WhatsApp</label>
       <input class="input-big" id="reg-phone" placeholder="Ex : 6 XX XX XX XX">
       <p id="reg-phone-status" style="font-size:11.5px; margin:6px 2px 0;"></p>
+      <div id="reg-existing-account-hint" style="display:none; background:var(--cream-2); border-radius:12px; padding:12px 14px; margin-top:8px;">
+        <p style="font-size:12.5px; margin:0 0 8px; color:var(--ink);">Vous avez déjà un compte avec ce numéro.</p>
+        <button class="admin-mini-btn" style="border-color:var(--leaf); color:var(--leaf); width:100%;" onclick="handleGoToLoginFromRegister()">→ Se connecter à ce compte</button>
+      </div>
 
       <label class="field-label">Vous êtes...</label>
       <div class="choice-row" id="reg-role">

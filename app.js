@@ -91,7 +91,11 @@ function showScreen(name) {
   if (navBtn) navBtn.classList.add('active');
 
   document.querySelector('.app-shell').classList.toggle('admin-active', name === 'admin');
-  if (name === 'bienvenue') window._regFormShownAt = Date.now();
+  if (name === 'bienvenue') {
+    window._regFormShownAt = Date.now();
+    const hint = document.getElementById('reg-existing-account-hint');
+    if (hint) hint.style.display = 'none';
+  }
 
   if (name === 'accueil') withLoading(renderHome());
   if (name === 'acheter') { withLoading(renderBuyListings()); renderMyNeeds(); }
@@ -176,6 +180,14 @@ async function handleRegisterStart() {
   await handleRegister();
 }
 
+function handleGoToLoginFromRegister() {
+  const phone = document.getElementById('reg-phone').value.trim();
+  document.getElementById('reg-existing-account-hint').style.display = 'none';
+  document.getElementById('reg-phone-status').textContent = '';
+  showScreen('login');
+  document.getElementById('login-phone').value = phone;
+}
+
 async function handleLogin() {
   const phoneRaw = document.getElementById('login-phone').value.trim();
   const errorEl = document.getElementById('login-error');
@@ -214,9 +226,15 @@ async function handleRegister() {
 
   const { error } = await db.createProfile({ full_name: name, phone, phone_verified: false, role, zone, marketing_opt_in: marketingOptIn });
   if (error) {
-    showToast(error.code === '23505' ? 'Ce numéro est déjà utilisé par un compte existant' : 'Erreur réseau — réessayez dans un instant');
+    if (error.code === '23505') {
+      showToast('Ce numéro est déjà utilisé par un compte existant');
+      document.getElementById('reg-existing-account-hint').style.display = 'block';
+    } else {
+      showToast('Erreur réseau — réessayez dans un instant');
+    }
     return;
   }
+  document.getElementById('reg-existing-account-hint').style.display = 'none';
   showToast('Compte créé ✓ — votre numéro sera vérifié par notre équipe sous peu');
   updateNotifBadge();
   updateProfileNavIcon();
