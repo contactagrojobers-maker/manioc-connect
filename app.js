@@ -383,9 +383,14 @@ function contactButtonHtml(phone, phoneVerified) {
     return '<p style="font-size:12.5px;color:var(--ink-soft);margin-top:14px;">Numéro non disponible pour ce contact.</p>';
   }
   return `
-    <a href="https://wa.me/237${phone}" target="_blank" style="text-decoration:none;">
-      <button class="submit-btn" style="background:#25D366; margin-top:16px;">💬 Contacter sur WhatsApp</button>
-    </a>
+    <div style="display:flex; gap:8px; margin-top:16px;">
+      <a href="https://wa.me/237${phone}" target="_blank" style="text-decoration:none; flex:1;">
+        <button class="submit-btn" style="background:#25D366; margin-top:0;">💬 WhatsApp</button>
+      </a>
+      <a href="tel:+237${phone}" style="text-decoration:none; flex:1;">
+        <button class="submit-btn" style="background:var(--leaf); margin-top:0;">📞 Appeler</button>
+      </a>
+    </div>
     <p style="text-align:center;font-size:11px;color:var(--ink-soft);margin-top:6px;">${formatCMPhone(phone)}${phoneVerified ? ' ✅' : ' · numéro non vérifié'}</p>
   `;
 }
@@ -575,6 +580,7 @@ async function renderIndustrial() {
 async function handleCreateIndustrial() {
   if (!requireAuth('industriels')) return;
   if (!checkCooldown('industrial')) return;
+  const user = db.getCurrentUser();
   const company_name = document.getElementById('ind-company').value.trim();
   const post_type = getSelectedValue('ind-type');
   const description = document.getElementById('ind-description').value.trim();
@@ -583,7 +589,7 @@ async function handleCreateIndustrial() {
 
   if (!company_name || !description || !zone) { showToast('Merci de remplir les champs requis'); return; }
 
-  await db.createIndustrialPost({ company_name, post_type, description, volume, zone });
+  await db.createIndustrialPost({ company_id: user ? user.id : null, company_name, post_type, description, volume, zone });
   showToast('Annonce industrielle publiée ✓');
   renderIndustrial();
   document.getElementById('ind-company').value = '';
