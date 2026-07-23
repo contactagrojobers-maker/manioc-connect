@@ -18,8 +18,8 @@
  * ------------------------------------------------------------
  */
 
-const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';
-const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_PUBLIC';
+const SUPABASE_URL = 'https://iaycxzbesjlrjwkynnbs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN4emJlc2pscmp3a3lubmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ2MzIsImV4cCI6MjEwMDI0MDYzMn0.e8ynhFH70xfJAAfIM-1ujky-sdHbHeHHKOmi5gEgWG8';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
