@@ -529,8 +529,10 @@
     <div style="text-align:center; margin:20px 0;">
       <div style="font-size:36px;">🔐</div>
       <div class="greeting" style="margin-top:8px;">Accès réservé</div>
-      <p class="greeting-sub">Entrez le mot de passe administrateur</p>
+      <p class="greeting-sub">Connectez-vous avec votre compte administrateur</p>
     </div>
+    <label class="field-label">Email</label>
+    <input class="input-big" id="admin-email" type="email" placeholder="votre@email.com">
     <label class="field-label">Mot de passe</label>
     <input class="input-big" id="admin-password" type="password" placeholder="••••••••">
     <p id="admin-login-error" style="font-size:12px;color:var(--terracotta);margin:6px 2px 0;"></p>
@@ -539,7 +541,7 @@
 
   <!-- ===== TABLEAU DE BORD ADMIN ===== -->
   <div class="screen" id="screen-admin">
-    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Espace administrateur</div><div style="width:34px;"></div></div>
+    <div class="topbar"><div class="icon-btn" onclick="showScreen('accueil')">←</div><div class="brand" style="font-size:15px;">Espace administrateur</div><div class="icon-btn" onclick="handleAdminLogout()" title="Se déconnecter">🚪</div></div>
 
     <div class="admin-layout">
       <div class="admin-sidebar">

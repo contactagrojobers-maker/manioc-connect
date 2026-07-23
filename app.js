@@ -455,24 +455,29 @@ async function updateNotifBadge() {
 
 // ============================================
 // ESPACE ADMIN
-// ⚠️ IMPORTANT : ce mot de passe est stocké côté client, uniquement pour
-// la démonstration. En production, l'authentification admin doit passer
-// par Supabase Auth + vérification côté serveur (RLS), jamais un mot de
-// passe visible dans le code JavaScript du navigateur.
+// Authentification via un vrai compte Supabase Auth (créé dans le
+// tableau de bord Supabase → Authentication → Users). Le mot de passe
+// n'est plus jamais stocké ni visible dans le code JavaScript.
 // ============================================
-const ADMIN_PASSWORD_DEMO = 'manioc2026';
-let ADMIN_UNLOCKED = false;
+async function handleAdminLogin() {
+  const email = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-password').value;
+  const errorEl = document.getElementById('admin-login-error');
 
-function handleAdminLogin() {
-  const pw = document.getElementById('admin-password').value;
-  if (pw !== ADMIN_PASSWORD_DEMO) {
-    document.getElementById('admin-login-error').textContent = 'Mot de passe incorrect';
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    errorEl.textContent = 'Email ou mot de passe incorrect';
     return;
   }
-  ADMIN_UNLOCKED = true;
   document.getElementById('admin-password').value = '';
-  document.getElementById('admin-login-error').textContent = '';
+  errorEl.textContent = '';
   showScreen('admin');
+}
+
+async function handleAdminLogout() {
+  await supabaseClient.auth.signOut();
+  showToast('Déconnecté de l\'espace admin');
+  showScreen('accueil');
 }
 
 function switchAdminTab(tab) {
@@ -498,7 +503,8 @@ async function renderAdminSuggestions() {
 }
 
 async function renderAdminDashboard() {
-  if (!ADMIN_UNLOCKED) { showScreen('admin-login'); return; }
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) { showScreen('admin-login'); return; }
 
   const { data: profiles } = await db.adminListProfiles();
   const { data: pendingPayments } = await db.listPendingPayments();
