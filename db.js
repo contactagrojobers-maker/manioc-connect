@@ -18,7 +18,7 @@
  * ------------------------------------------------------------
  */
 
-const SUPABASE_URL = 'https://ojxzamzyjfcmuruppbyl.supabase.co/rest/v1/';
+const SUPABASE_URL = 'https://ojxzamzyjfcmuruppbyl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qeHphbXp5amZjbXVydXBwYnlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Mzc0OTcsImV4cCI6MjA5OTExMzQ5N30.uKu_GsJXZVQOunmCoWrkG7sJIMb4-pqas9fn-H-33CA';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
