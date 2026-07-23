@@ -19,7 +19,8 @@
  */
 
 const SUPABASE_URL = 'https://iaycxzbesjlrjwkynnbs.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN4emJlc2pscmp3a3lubmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ2MzIsImV4cCI6MjEwMDI0MDYzMn0.e8ynhFH70xfJAAfIM-1ujky-sdHbHeHHKOmi5gEgWG8';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN4emJlc2pscmp3a3lubmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ2MzIsImV4cCI6MjEwMDI0MDYzMn0.e8ynhFH70xfJAAfIM-1ujky-sdHbHeHHKOmi5gEgWG8
+';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -236,7 +237,7 @@ const db = {
   // -- ANNONCES DE VENTE --
   async listListings() {
     const { data, error } = await supabaseClient
-      .from('listings').select('*').eq('status', 'active').order('created_at', { ascending: false });
+      .from('listings').select('*, profiles(phone, phone_verified)').eq('status', 'active').order('created_at', { ascending: false });
     return { data: data || [], error };
   },
   async listAllListingsAdmin() {
@@ -275,7 +276,7 @@ const db = {
   // -- BESOINS (achat) --
   async listNeeds() {
     const { data, error } = await supabaseClient
-      .from('needs').select('*').eq('status', 'active').order('created_at', { ascending: false });
+      .from('needs').select('*, profiles(phone, phone_verified)').eq('status', 'active').order('created_at', { ascending: false });
     return { data: data || [], error };
   },
   async listMyNeeds(buyerId) {
@@ -311,7 +312,7 @@ const db = {
   // -- INDUSTRIELS --
   async listIndustrial() {
     const { data, error } = await supabaseClient
-      .from('industrial_posts').select('*').order('created_at', { ascending: false });
+      .from('industrial_posts').select('*, profiles(phone, phone_verified)').order('created_at', { ascending: false });
     return { data: data || [], error };
   },
   async createIndustrialPost(post) {

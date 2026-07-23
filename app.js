@@ -359,17 +359,86 @@ async function renderBuyListings() {
   });
 
   const container = document.getElementById('buy-listings');
+  window._cachedListings = listings;
   container.innerHTML = listings.map(l => `
-    <div class="listing">
+    <div class="listing" style="cursor:pointer;" onclick="showListingDetail('${l.id}')">
       <div class="thumb">${PRODUCT_EMOJI[l.product_type] || '🌾'}</div>
       <div class="info">
         <div class="title">${PRODUCT_LABELS[l.product_type] || l.product_type} — ${l.quantity} ${l.unit}</div>
         <div class="meta">📍 ${l.zone} · ${l.seller_name}${l.is_group_listing ? ' (groupement)' : ''}</div>
         ${l.price_per_unit ? `<div class="price">${l.price_per_unit} FCFA / ${l.unit}</div>` : ''}
       </div>
-      <button class="call-btn">📞</button>
+      <span class="call-btn" style="pointer-events:none;">›</span>
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune annonce ne correspond à votre recherche.</p>';
+}
+
+// ---------- PANNEAU DE DÉTAILS (annonces / besoins / industriels) ----------
+function closeDetailPanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+function contactButtonHtml(phone, phoneVerified) {
+  if (!phone) {
+    return '<p style="font-size:12.5px;color:var(--ink-soft);margin-top:14px;">Numéro non disponible pour ce contact.</p>';
+  }
+  return `
+    <a href="https://wa.me/237${phone}" target="_blank" style="text-decoration:none;">
+      <button class="submit-btn" style="background:#25D366; margin-top:16px;">💬 Contacter sur WhatsApp</button>
+    </a>
+    <p style="text-align:center;font-size:11px;color:var(--ink-soft);margin-top:6px;">${formatCMPhone(phone)}${phoneVerified ? ' ✅' : ' · numéro non vérifié'}</p>
+  `;
+}
+
+function showListingDetail(id) {
+  const l = (window._cachedListings || []).find(x => x.id === id);
+  if (!l) return;
+  document.getElementById('detail-panel-content').innerHTML = `
+    <div style="font-size:36px;text-align:center;">${PRODUCT_EMOJI[l.product_type] || '🌾'}</div>
+    <h3 style="text-align:center;font-family:'Poppins',sans-serif;margin:8px 0 2px;">${PRODUCT_LABELS[l.product_type] || l.product_type}</h3>
+    <p style="text-align:center;color:var(--ink-soft);font-size:13px;margin:0 0 14px;">Publié ${timeAgo(l.created_at)}</p>
+    <div class="info-row"><span>Quantité</span><b>${l.quantity} ${l.unit}</b></div>
+    ${l.price_per_unit ? `<div class="info-row"><span>Prix</span><b>${l.price_per_unit} FCFA / ${l.unit}</b></div>` : ''}
+    <div class="info-row"><span>Zone</span><b>${l.zone}</b></div>
+    <div class="info-row"><span>Vendeur</span><b>${l.seller_name}${l.is_group_listing ? ' (groupement)' : ''}</b></div>
+    ${contactButtonHtml(l.profiles?.phone, l.profiles?.phone_verified)}
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function showNeedDetail(id) {
+  const n = (window._cachedNeeds || []).find(x => x.id === id);
+  if (!n) return;
+  document.getElementById('detail-panel-content').innerHTML = `
+    <div style="font-size:36px;text-align:center;">${PRODUCT_EMOJI[n.product_type] || '🌾'}</div>
+    <h3 style="text-align:center;font-family:'Poppins',sans-serif;margin:8px 0 2px;">Recherche : ${(PRODUCT_LABELS[n.product_type] || n.product_type).toLowerCase()}</h3>
+    <p style="text-align:center;color:var(--ink-soft);font-size:13px;margin:0 0 14px;">Publié ${timeAgo(n.created_at)}</p>
+    <div class="info-row"><span>Quantité recherchée</span><b>${n.quantity} ${n.unit}</b></div>
+    ${n.budget_per_unit ? `<div class="info-row"><span>Budget</span><b>${n.budget_per_unit}</b></div>` : ''}
+    <div class="info-row"><span>Zone</span><b>${n.zone}</b></div>
+    <div class="info-row"><span>Acheteur</span><b>${n.buyer_name}</b></div>
+    ${n.is_urgent ? '<div class="info-row"><span>Urgence</span><b style="color:var(--terracotta);">🔥 Urgent</b></div>' : ''}
+    ${n.payment_terms ? `<div class="info-row"><span>Paiement</span><b>${n.payment_terms}</b></div>` : ''}
+    ${n.quality_notes ? `<p style="font-size:12.5px;color:var(--ink-soft);margin-top:10px;">${n.quality_notes}</p>` : ''}
+    ${contactButtonHtml(n.profiles?.phone, n.profiles?.phone_verified)}
+  `;
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+function showIndustrialDetail(id) {
+  const p = (window._cachedIndustrial || []).find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('detail-panel-content').innerHTML = `
+    <div style="font-size:36px;text-align:center;">🏭</div>
+    <h3 style="text-align:center;font-family:'Poppins',sans-serif;margin:8px 0 2px;">${p.company_name}</h3>
+    <p style="text-align:center;color:var(--ink-soft);font-size:13px;margin:0 0 14px;">Publié ${timeAgo(p.created_at)}</p>
+    <div class="info-row"><span>Type</span><b>${p.post_type === 'achete' ? 'Achète' : 'Vend'}</b></div>
+    <div class="info-row"><span>Description</span><b>${p.description}</b></div>
+    ${p.volume ? `<div class="info-row"><span>Volume</span><b>${p.volume}</b></div>` : ''}
+    <div class="info-row"><span>Zone</span><b>${p.zone}</b></div>
+    ${contactButtonHtml(p.profiles?.phone, p.profiles?.phone_verified)}
+  `;
+  document.getElementById('detail-panel').classList.add('open');
 }
 
 // ---------- PUBLIER UN BESOIN ----------
@@ -447,14 +516,15 @@ async function renderHome() {
   banner.style.display = (!user || user.is_premium) ? 'none' : 'flex';
 
   const { data: needs } = await db.listNeeds();
+  window._cachedNeeds = needs;
   const needsHtml = needs.slice(0, 4).map(n => `
-    <div class="need-card">
+    <div class="need-card" style="cursor:pointer;" onclick="showNeedDetail('${n.id}')">
       <div>
         <div class="title">${n.quantity} ${n.unit} de ${(PRODUCT_LABELS[n.product_type] || n.product_type).toLowerCase()}</div>
         <div class="meta">📍 ${n.zone} · ${n.buyer_name}</div>
         ${n.is_urgent ? '<span class="need-urgent">🔥 Urgent</span>' : ''}
       </div>
-      <button class="call-btn">📞</button>
+      <span class="call-btn" style="pointer-events:none;">›</span>
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucun besoin publié pour le moment.</p>';
   document.getElementById('home-needs-list').innerHTML = needsHtml;
@@ -487,16 +557,17 @@ async function handleProposeGroup(zone) {
 // ---------- INDUSTRIELS ----------
 async function renderIndustrial() {
   const { data: posts } = await db.listIndustrial();
+  window._cachedIndustrial = posts;
   const container = document.getElementById('industrial-listings');
   container.innerHTML = posts.map(p => `
-    <div class="listing">
+    <div class="listing" style="cursor:pointer;" onclick="showIndustrialDetail('${p.id}')">
       <div class="thumb">🏭</div>
       <div class="info">
         <div class="title">${p.company_name}</div>
         <div class="meta">${p.post_type === 'achete' ? 'Achète' : 'Vend'} · ${p.description}${p.volume ? ' · ' + p.volume : ''}</div>
         <div class="price">Zone : ${p.zone}</div>
       </div>
-      <button class="call-btn">📞</button>
+      <span class="call-btn" style="pointer-events:none;">›</span>
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucune annonce industrielle pour le moment.</p>';
 }
