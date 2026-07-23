@@ -18,8 +18,8 @@
  * ------------------------------------------------------------
  */
 
-const SUPABASE_URL = 'https://ojxzamzyjfcmuruppbyl.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qeHphbXp5amZjbXVydXBwYnlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Mzc0OTcsImV4cCI6MjA5OTExMzQ5N30.uKu_GsJXZVQOunmCoWrkG7sJIMb4-pqas9fn-H-33CA';
+const SUPABASE_URL = 'https://iaycxzbesjlrjwkynnbs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN4emJlc2pscmp3a3lubmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ2MzIsImV4cCI6MjEwMDI0MDYzMn0.e8ynhFH70xfJAAfIM-1ujky-sdHbHeHHKOmi5gEgWG8';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
