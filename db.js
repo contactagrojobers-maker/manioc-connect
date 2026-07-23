@@ -18,8 +18,8 @@
  * ------------------------------------------------------------
  */
 
-const SUPABASE_URL = 'https://iaycxzbesjlrjwkynnbs.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlheWN4emJlc2pscmp3a3lubmJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2NjQ2MzIsImV4cCI6MjEwMDI0MDYzMn0.e8ynhFH70xfJAAfIM-1ujky-sdHbHeHHKOmi5gEgWG8';
+const SUPABASE_URL = 'https://VOTRE-PROJET.supabase.co';
+const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_PUBLIC';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -75,7 +75,7 @@ const db = {
   },
 
   // -- PAIEMENTS (avec validation admin manuelle, en attendant l'API opérateur réelle) --
-  async submitPaymentRequest({ userId, amount, provider, phone, reference }) {
+  async submitPaymentRequest({ userId, amount, provider, phone, reference, buyerName, buyerZone, buyerRole }) {
     const { data, error } = await supabaseClient
       .from('payments')
       .insert([{
@@ -85,8 +85,9 @@ const db = {
       .select()
       .single();
     if (!error) {
+      const roleLabel = buyerRole === 'producteur' ? 'Producteur' : buyerRole === 'acheteur' ? 'Acheteur' : buyerRole === 'industriel' ? 'Industriel' : buyerRole;
       await this.createNotification(
-        `Nouvelle demande de paiement de ${amount} FCFA en attente de validation`,
+        `Nouvelle demande de paiement de ${amount} FCFA — ${buyerName || 'Inconnu'} (${roleLabel || '—'}, ${buyerZone || '—'}, ${phone}) — réf. ${reference}`,
         { audience: 'admin', notify_email: true }
       );
     }

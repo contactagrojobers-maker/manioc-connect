@@ -260,7 +260,10 @@ async function handlePayment() {
 
   if (!phone || !reference) { showToast('Merci de renseigner votre numéro et la référence de transaction'); return; }
 
-  const { error } = await db.submitPaymentRequest({ userId: user.id, amount: 4000, provider, phone, reference });
+  const { error } = await db.submitPaymentRequest({
+    userId: user.id, amount: 4000, provider, phone, reference,
+    buyerName: user.full_name, buyerZone: user.zone, buyerRole: user.role,
+  });
   if (error) { showToast('Erreur réseau — le paiement n\'a pas pu être enregistré, réessayez'); return; }
   showToast('Paiement enregistré — en attente de validation ✓');
   updateNotifBadge();
@@ -722,6 +725,9 @@ function renderPendingPaymentCards(pendingPayments) {
         <button class="btn-approve" onclick="handleApprovePayment('${p.id}')">✓ Valider</button>
         <button class="btn-reject" onclick="handleRejectPayment('${p.id}')">✕ Rejeter</button>
       </div>
+      ${p.profile ? `<a href="https://wa.me/237${p.profile.phone}" target="_blank" style="text-decoration:none;">
+        <button class="admin-mini-btn" style="width:100%; margin-top:8px; border-color:#25D366; color:#25D366;">💬 Contacter sur WhatsApp</button>
+      </a>` : ''}
     </div>
   `).join('') || '<p style="color:var(--ink-soft);font-size:13px;">Aucun paiement en attente.</p>';
 }
